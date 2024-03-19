@@ -1,6 +1,6 @@
+from flask import Flask, jsonify, request, current_app
 from flask.json.provider import DefaultJSONProvider
-from flask import Flask, jsonify, request
-from json import JSONEncoder
+from sqlalchemy import create_engine, text
 
 
 class CustomJSONEncoder(DefaultJSONProvider):
@@ -14,22 +14,79 @@ class CustomJSONEncoder(DefaultJSONProvider):
         return list(obj)
 
 
-app = Flask(__name__)
-app.users = {}
-app.id_count = 1
-app.tweets = []
-app.json = CustomJSONEncoder(app)
+def create_app(test_config = None):
+    app = Flask(__name__)
+
+    if test_config is None:
+        app.config.from_pyfile("config.py")
+    else:
+        app.config.update(test_config)
+
+    print(app.config['DB_URL'])
+
+    database = create_engine(
+        app.config['DB_URL'],
+        # encoding='utf-8',
+        max_overflow=0
+    )
+
+    app.database = database
+
+    return app
+
+
+app = create_app()
 
 
 @app.route("/sign-up", methods=['POST'])
 def sign_up():
     new_user = request.json
-    new_user["id"] = app.id_count
-    app.users[app.id_count] = new_user
-    app.id_count = app.id_count + 1
+    print(new_user)
+    connection = app.database.connect()
+    try:
+        result = connection.execute(text("""
+        INSERT INTO `miniter`.`users` (
+            `name`,
+            `email`,
+            `profile`,
+            `hashed_password`
+        ) VALUES (
+            :name,
+            :email,
+            :profile,
+            :hashed_password
+        )
+        """), new_user)
+        new_user_id = result.lastrowid
+    finally:
+        connection.close()
 
-    return jsonify(new_user)
+    connection = app.database.connect()
+    try:
+        row = connection.execute(text("""
+        SELECT
+            `id`,
+            `name`,
+            `email`,
+            `profile`
+        FROM `miniter`.`users`
+        WHERE `id` = :user_id;
+        """), {'user_id': new_user_id}).fetchone()
+    finally:
+        connection.close()
 
+    print(row)
+
+    created_user = {
+        'id': row['id'],
+        'name': row['name'],
+        'email': row['email'],
+        'profile': row['profile']
+    } if row else None
+
+    print(created_user)
+
+    return jsonify(created_user)
 
 @app.route("/tweet", methods=['POST'])
 def tweet():
