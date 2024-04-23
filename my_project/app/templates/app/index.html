@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Django Page</title>
+</head>
+<body>
+<h1>Post List</h1>
+{% for post in post_list %}
+    <div>{{ post.id }}, {{ post.title }}</div>
+{% endfor %}
+</body>
+</html>
