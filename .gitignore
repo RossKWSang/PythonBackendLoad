@@ -240,4 +240,4 @@ fabric.properties
 
 migrations/
 
-**/settings.py
+myDjangoProject03-hottrack/mysite/settings.py
