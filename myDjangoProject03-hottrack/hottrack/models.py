@@ -1,28 +1,29 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import date
 from typing import Dict
 from urllib.parse import quote
 
+from django.db import models
+
 
 # 파이썬 3.7부터 지원
-@dataclass
-class Song:
-    id: str
-    rank: int
-    album_name: str
-    name: str
-    artist_name: str
-    cover_url: str
-    lyrics: str
-    genre: str
-    release_date: date
-    like_count: int
+class Song(models.Model):
+    melon_uid = models.CharField(max_length=20, unique=True)
+    rank = models.PositiveSmallIntegerField()
+    album_name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100)
+    artist_name = models.CharField(max_length=100)
+    cover_url = models.URLField()
+    lyrics = models.TextField()
+    genre = models.CharField(max_length=100)
+    release_date = models.DateField()
+    like_count = models.PositiveSmallIntegerField()
+
     @property
     def melon_detail_url(self) -> str:
-        melon_uid = quote(self.id)
-        return f"https://www.melon.com/song/detail.htm?songId={melon_uid}"
+        song_id = quote(self.melon_uid)
+        return f"https://www.melon.com/song/detail.htm?songId={song_id}"
 
     @property
     def youtube_search_url(self) -> str:
